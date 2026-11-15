@@ -1,0 +1,45 @@
+{
+  "name": "musicy",
+  "version": "1.0.0",
+  "description": "Lightweight, self-hosted Discord music bot for small servers: even loudness, paged queue, effects, lyrics, radio",
+  "keywords": [
+    "discord",
+    "discord-bot",
+    "music-bot",
+    "discordjs",
+    "yt-dlp",
+    "ffmpeg",
+    "self-hosted",
+    "lightweight"
+  ],
+  "homepage": "https://github.com/Sid954/Musicy#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sid954/Musicy.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Sid954/Musicy/issues"
+  },
+  "license": "MIT",
+  "private": true,
+  "main": "src/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node --max-old-space-size=256 --max-semi-space-size=1 src/index.js",
+    "deploy": "node src/deploy-commands.js",
+    "update-ytdlp": "node scripts/update-ytdlp.js",
+    "check": "node scripts/check.js",
+    "test": "node --test tests/",
+    "selftest": "node scripts/selftest.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@discordjs/voice": "^0.19.2",
+    "discord.js": "^14.16.0",
+    "dotenv": "^16.4.5",
+    "ffmpeg-static": "^5.2.0",
+    "tweetnacl": "^1.0.3"
+  }
+}

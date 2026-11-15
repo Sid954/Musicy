@@ -1,0 +1,9 @@
+node_modules
+.git
+.env
+.env.*
+!.env.example
+bin
+cookies.txt
+data
+npm-debug.log*
