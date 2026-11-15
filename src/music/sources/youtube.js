@@ -340,6 +340,17 @@ async function stream(track, { seek = 0, filters = [], volume = 1, signal, forma
     const info = await getAudioInfo(track, signal, format === 'ba*' ? 'ba*' : 'bestaudio');
     return spawnStream(track, { ...opts, copyOpus: info.acodec === 'opus' }, info.url);
   }
+  // No direct URL yet (e.g. a saved-playlist entry): one short lookup gives ffmpeg a direct URL, so yt-dlp does not
+  // keep running (and using CPU) for the whole song. If the lookup fails, fall back to the yt-dlp pipe.
+  if (!track.isLive && /^https?:\/\//i.test(String(track.url || ''))) {
+    try {
+      const info = await getAudioInfo(track, signal, format === 'ba*' ? 'ba*' : 'bestaudio');
+      if (signal?.aborted) throw new Error('yt-dlp request cancelled');
+      return spawnStream(track, { ...opts, copyOpus: info.acodec === 'opus' }, info.url);
+    } catch (error) {
+      if (signal?.aborted) throw error;
+    }
+  }
   return spawnStream(track, opts);
 }
 

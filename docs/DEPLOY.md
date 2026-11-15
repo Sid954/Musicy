@@ -55,3 +55,9 @@ unexplained lookup failure. Settings, playlists, stats and the 24/7 queue live i
 `--max-old-space-size=256 --max-semi-space-size=1`: measured idle memory 91 → 78 MB and 108 → 78 MB after heavy work,
 with no measurable slowdown. If your host launches Node itself, set
 `NODE_OPTIONS=--max-old-space-size=256 --max-semi-space-size=1`.
+
+## 8. If the host stops the server for CPU use
+Some free hosts stop servers whose average CPU is too high. The biggest CPU use in Musicy is **loudness leveling**: it re-encodes every song (measured: about 2% of one core per playing server on a PC versus 0.1% for passthrough, and a shared host core is slower). To cut it:
+- Set `LEVELING_DEFAULT=off` in the panel (new servers start without leveling), or run `/normalize enabled:false` in an existing server. Songs are then passed through without re-encoding.
+- Songs from saved playlists now use one short lookup and ffmpeg alone; yt-dlp no longer keeps running for the whole song.
+- Idle cost is near zero: the only timers are the 30 s status rotation, 60 s memory/helper checks and 15 s card updates while someone listens.

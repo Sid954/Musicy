@@ -5,7 +5,9 @@ const log = require('./log');
 const DEFAULTS = Object.freeze({
   volume: 100,
   filterPresets: [],
-  levelingEnabled: true, // levels every song to the same loudness (see /normalize)
+  // Levels every song to the same loudness (see /normalize). It re-encodes audio (about 20x the CPU of passthrough),
+  // so a CPU-limited host can start new servers with it off: LEVELING_DEFAULT=off.
+  levelingEnabled: String(process.env.LEVELING_DEFAULT || '').toLowerCase() !== 'off',
   loudnessLevel: 'soft',
   sponsorBlock: false,
   djRole: null,
