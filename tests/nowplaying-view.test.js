@@ -96,8 +96,10 @@ test('card respects Discord limits for huge titles and fields', () => {
 test('controls: <=3 rows of <=5 buttons, correct ids, state-dependent look', () => {
   const rows = buildNowPlayingRows({ paused: false, loop: 'off', canPrevious: true });
   assert.ok(rows.length <= 3 && rows.every((r) => r.toJSON().components.length <= 5));
-  assert.deepEqual(comps(rows).map((b) => b.custom_id), ['np:prev', 'np:pause', 'np:skip', 'np:stop', 'np:loop', 'np:shuffle', 'np:queue', 'np:favorite', 'np:lyrics', 'np:skipnext']);
-  const [prev, pause, , stop, loop] = comps(rows);
+  assert.deepEqual(comps(rows).map((b) => b.custom_id), ['np:prev', 'np:pause', 'np:skip', 'np:loop', 'np:shuffle', 'np:stop', 'np:queue', 'np:favorite', 'np:lyrics', 'np:skipnext']);
+  const [prev, pause, , loop, shuffle, stop] = comps(rows);
+  assert.equal(loop.label, undefined);
+  assert.equal(shuffle.label, undefined);
   assert.equal(prev.disabled, false);
   assert.equal(pause.emoji.name, '⏸️');
   assert.equal(pause.style, 1); // primary
@@ -107,8 +109,8 @@ test('controls: <=3 rows of <=5 buttons, correct ids, state-dependent look', () 
   assert.equal(paused[0].disabled, true); // no previous track
   assert.equal(paused[1].emoji.name, '▶️');
   assert.equal(paused[1].style, 3); // success
-  assert.equal(paused[4].style, 3);
-  assert.equal(paused[4].emoji.name, '🔂');
+  assert.equal(paused[3].style, 3); // loop on = green
+  assert.equal(paused[3].emoji.name, '🔂');
   assert.ok(comps(buildNowPlayingRows({ disabled: true, canPrevious: true })).every((b) => b.disabled));
 });
 
@@ -124,7 +126,7 @@ test('transport buttons are icon-only and "Skip next" is enabled only when somet
   const rowsFor = (hasNext) => buildNowPlayingRows({ hasNext, canPrevious: true }).flatMap((r) => r.toJSON().components);
   const by = (list, id) => list.find((b) => b.custom_id === id);
   const buttons = rowsFor(true);
-  for (const id of ['np:prev', 'np:pause', 'np:skip', 'np:stop']) assert.equal(by(buttons, id).label, undefined, id);
+  for (const id of ['np:prev', 'np:pause', 'np:skip', 'np:loop', 'np:shuffle']) assert.equal(by(buttons, id).label, undefined, id);
   assert.equal(by(buttons, 'np:skipnext').label, 'Skip next');
   assert.equal(by(buttons, 'np:skipnext').disabled, false);
   assert.equal(by(rowsFor(false), 'np:skipnext').disabled, true);
