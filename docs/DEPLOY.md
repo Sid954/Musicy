@@ -29,7 +29,7 @@ After the bot is online the same check is available in Discord as `/admin selfte
 | Symptom | Cause | Fix |
 |---|---|---|
 | `YouTube lookup: … sign in (bot check)` | YouTube blocks datacenter IPs | Export cookies from a throwaway YouTube account as `cookies.txt`, upload it, set `YTDLP_COOKIES=cookies.txt`, restart. `/admin cookies` shows whether it worked. |
-| `ffmpeg: The bundled ffmpeg binary is missing` | npm skipped the `ffmpeg-static` install script | Run `npm rebuild ffmpeg-static` (or reinstall without `--ignore-scripts`). |
+| `ffmpeg: The bundled ffmpeg binary is missing` | newer npm (11+/12) blocks install scripts ("allowScripts"), so `ffmpeg-static` has no binary | Musicy now downloads it by itself on start (needs internet). If that still fails, run `node node_modules/ffmpeg-static/install.js` in the host console. |
 | Bot plays but nobody hears it | server-muted, deafened listener, missing Speak permission | The bot posts a warning for mute / missing permissions. Check Discord's per-user volume for the bot (right-click it). |
 | Commands missing in Discord | commands not registered | `npm run deploy` (set `GUILD_ID` for instant registration in one server). |
 

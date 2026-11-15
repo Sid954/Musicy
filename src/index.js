@@ -133,6 +133,9 @@ setInterval(() => {
 (async () => {
   enableFileLogging(log); // everything below is also written to data/logs/bot.log (rotated, size-capped)
 
+  // npm may skip ffmpeg-static's install script (npm 11+/12 "allowScripts"); fetch the binary ourselves if so.
+  require('./ensure-ffmpeg').ensureFfmpeg({ log: (message) => log.warn(message) });
+
   // Fail fast with a clear explanation instead of a cryptic crash (or silent audio) later.
   const checks = runStartupChecks();
   for (const result of checks.filter((r) => r.level === 'warn' || r.level === 'error')) (result.level === 'error' ? log.error : log.warn)(formatResult(result));

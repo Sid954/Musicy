@@ -3,3 +3,6 @@ node_modules/
 bin/
 cookies.txt
 data/
+
+*.rar
+*.zip
