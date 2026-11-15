@@ -13,4 +13,17 @@ function displayTitle(title) {
   return cleaned || original;
 }
 
-module.exports = { displayTitle };
+// Short form for cards: cuts YouTube's "| Movie | Singer | Label" tails and "- Full Video" and limits the length
+// (about the average song title), breaking at a word.
+function shortTitle(title, max = 50) {
+  let value = displayTitle(title);
+  const bar = value.search(/\s[|｜]\s/);
+  if (bar >= 6) value = value.slice(0, bar);
+  value = value.replace(/\s*[-–—:]\s*full\s+(video|song|audio|album)\s*$/i, '').trim() || value;
+  if (value.length <= max) return value;
+  const cut = value.slice(0, max - 1);
+  const space = cut.lastIndexOf(' ');
+  return `${(space > max * 0.6 ? cut.slice(0, space) : cut).replace(/[\s,;:&|-]+$/, '')}…`;
+}
+
+module.exports = { displayTitle, shortTitle };

@@ -3,7 +3,7 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { fmt, formatClock } = require('./format');
 const { progressBar } = require('./progress');
-const { displayTitle } = require('./title');
+const { displayTitle, shortTitle } = require('./title');
 const { trackThumbnail } = require('./thumbnail');
 const { clip } = require('./pager');
 const { formatTotal } = require('./collection');
@@ -42,8 +42,9 @@ function buildNowPlayingEmbed(snapshot) {
   ];
   if (track.requestedBy) fields.push({ name: 'Requested by', value: clip(track.requestedBy, 100), inline: true });
   if (next) {
-    const lines = [`${clip(displayTitle(next.title), 80)} · ${fmt(next.duration)}`];
-    const rest = [queuedCount > 1 ? `${queuedCount - 1} more` : null, remainingSeconds > 0 ? `${formatTotal(remainingSeconds)} left` : null].filter(Boolean);
+    // "▸ **Song** · 4:30" then a quiet second line: "+174 more · 11h 20m left".
+    const lines = [`▸ **${shortTitle(next.title, 40).replace(/([*_~\`|])/g, '\\$1')}** · ${fmt(next.duration)}`];
+    const rest = [queuedCount > 1 ? `\`+${queuedCount - 1} more\`` : null, remainingSeconds > 0 ? `\`${formatTotal(remainingSeconds)} left\`` : null].filter(Boolean);
     if (rest.length) lines.push(rest.join(' · '));
     fields.push({ name: 'Up next', value: lines.join('\n'), inline: false });
   }
@@ -52,7 +53,7 @@ function buildNowPlayingEmbed(snapshot) {
   const embed = new EmbedBuilder()
     .setColor(state.color)
     .setAuthor({ name: state.label })
-    .setTitle(clip(displayTitle(track.title), 256))
+    .setTitle(shortTitle(track.title, 56))
     .setDescription(live ? '🔴 **LIVE**' : `${progressBar(elapsed, track.duration, BAR_WIDTH)} ${formatClock(elapsed)} / ${formatClock(track.duration)}`)
     .addFields(fields);
   if (/^https?:\/\//i.test(String(track.url || ''))) embed.setURL(track.url);

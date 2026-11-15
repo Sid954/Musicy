@@ -89,7 +89,8 @@ test('json store debounces: many mutations produce one write after the delay', a
   await store.load();
   for (let n = 0; n < 20; n++) store.mutate((d) => { d.count = n; });
   assert.equal(await fs.stat(file).then(() => true, () => false), false, 'not written immediately');
-  await new Promise((resolve) => setTimeout(resolve, 150));
+  // Wait for the debounced write (generous: the full suite runs many test files in parallel).
+  for (let waited = 0; waited < 3000 && !(await fs.stat(file).then(() => true, () => false)); waited += 25) await new Promise((resolve) => setTimeout(resolve, 25));
   assert.equal(JSON.parse(await fs.readFile(file, 'utf8')).count, 19);
   await fs.rm(dir, { recursive: true, force: true });
 });

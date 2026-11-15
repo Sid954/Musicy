@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { fmt, formatClock } = require('../src/music/format');
 const { blockBar } = require('../src/music/progress');
-const { displayTitle } = require('../src/music/title');
+const { displayTitle, shortTitle } = require('../src/music/title');
 const { buildNowPlayingEmbed, buildNowPlayingRows, buildNowPlayingCard, buildFinishedEmbed, cardState } = require('../src/music/nowplaying-view');
 
 const track = { title: 'Sami Yusuf - Make Me Strong #worldmusic', url: 'https://youtu.be/abc', duration: 237, author: 'Sami Yusuf', requestedBy: 'Sid', thumbnail: 'https://i.ytimg.com/x.jpg' };
@@ -64,7 +64,7 @@ test('card keeps the original look: slider bar + Duration/Channel/Requested by, 
   assert.equal(fields.Channel.value, 'Sami Yusuf');
   assert.equal(fields['Requested by'].value, 'Sid');
   assert.deepEqual([fields.Duration.inline, fields.Channel.inline, fields['Requested by'].inline], [true, true, true]);
-  assert.equal(fields['Up next'].value, 'Next Song · 3:20\n12 more · 50m left');
+  assert.equal(fields['Up next'].value, '▸ **Next Song** · 3:20\n`+12 more` · `50m left`');
   assert.equal(fields['Up next'].inline, false);
   assert.equal(fields.Settings.value, '🔁 Loop: queue  ·  🔊 80%');
   assert.equal(e.thumbnail.url, 'https://i.ytimg.com/x.jpg');
@@ -76,7 +76,7 @@ test('card keeps the original look: slider bar + Duration/Channel/Requested by, 
 
 test('Up next shows only what exists: last track queued, nothing queued, live streams', () => {
   const upNext = (extra) => buildNowPlayingEmbed({ track, ...extra }).toJSON().fields.find((f) => f.name === 'Up next')?.value;
-  assert.equal(upNext({ next: { title: 'Only One', duration: 90 }, queuedCount: 1, remainingSeconds: 90 }), 'Only One · 1:30\n1m left');
+  assert.equal(upNext({ next: { title: 'Only One', duration: 90 }, queuedCount: 1, remainingSeconds: 90 }), '▸ **Only One** · 1:30\n`1m left`');
   assert.equal(upNext({}), undefined);
   const live = buildNowPlayingEmbed({ track: { title: 'Radio', isLive: true, duration: 0, author: 'SomaFM' }, next: { title: 'Next', duration: 60 }, queuedCount: 2, remainingSeconds: 120 }).toJSON();
   assert.equal(live.fields.find((f) => f.name === 'Duration').value, 'Live');
@@ -130,4 +130,14 @@ test('transport buttons are icon-only and "Skip next" is enabled only when somet
   assert.equal(by(buttons, 'np:skipnext').label, 'Skip next');
   assert.equal(by(buttons, 'np:skipnext').disabled, false);
   assert.equal(by(rowsFor(false), 'np:skipnext').disabled, true);
+});
+
+test('shortTitle drops YouTube tails, "Full Video" and long endings but keeps normal titles', () => {
+  assert.equal(shortTitle("Tere Sang Yaara - Full Video | Rustom | Akshay Kumar & Ileana D'cruz | Arko | Manoj Muntashir"), 'Tere Sang Yaara');
+  assert.equal(shortTitle('Wilbur Soot - Your New Boyfriend'), 'Wilbur Soot - Your New Boyfriend');
+  assert.equal(shortTitle('G-Eazy & Halsey - Him & I (Official Video)'), 'G-Eazy & Halsey - Him & I');
+  const long = shortTitle('A Very Long Song Name That Keeps Going And Going Forever And Ever Amen Remix Extended', 50);
+  assert.ok(long.length <= 50 && long.endsWith('…') && !/\s…$/.test(long), long);
+  assert.equal(shortTitle('A | B'), 'A | B', 'a tiny head before "|" is not cut');
+  assert.equal(shortTitle(''), 'Unknown');
 });

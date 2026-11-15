@@ -102,7 +102,7 @@ test('refreshAnnouncement re-renders embed AND rows from the live queue (loop ba
   const embed = edit.embeds[0].toJSON();
   const fields = Object.fromEntries(embed.fields.map((f) => [f.name, f.value]));
   assert.match(fields.Settings, /Loop: queue/);
-  assert.match(fields['Up next'], /^Song 2 · 3:00\n1 more · 6m left/);
+  assert.match(fields['Up next'], /^▸ \*\*Song 2\*\* · 3:00\n`\+1 more` · `6m left`/);
   assert.equal(fields.Duration, '3:00');
   assert.equal(fields.Channel, 'Band');
   assert.equal(edit.components.length, 2);
