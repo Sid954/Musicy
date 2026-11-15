@@ -9,10 +9,10 @@ const { clip } = require('./pager');
 const { formatTotal } = require('./collection');
 
 const STATES = {
-  playing: { label: '▶ Now playing', color: 0x5865f2 },
-  paused: { label: '⏸ Paused', color: 0xfee75c },
-  live: { label: '🔴 Live', color: 0xed4245 },
-  autoplay: { label: '📻 Autoplay', color: 0x1abc9c },
+  playing: { label: '▶ Now playing', color: 0x7c5cff },
+  paused: { label: '⏸ Paused', color: 0xf5a524 },
+  live: { label: '🔴 Live', color: 0xff4d6d },
+  autoplay: { label: '📻 Autoplay', color: 0x22c3a6 },
 };
 const BAR_WIDTH = 14;
 
@@ -62,7 +62,7 @@ function buildNowPlayingEmbed(snapshot) {
   return embed;
 }
 
-function buildNowPlayingRows({ paused = false, loop = 'off', canPrevious = false, disabled = false } = {}) {
+function buildNowPlayingRows({ paused = false, loop = 'off', canPrevious = false, hasNext = false, disabled = false } = {}) {
   const button = (id, { label, emoji, style = ButtonStyle.Secondary, off = false }) => {
     const b = new ButtonBuilder().setCustomId(`np:${id}`).setStyle(style).setDisabled(disabled || off);
     if (emoji) b.setEmoji(emoji);
@@ -71,10 +71,10 @@ function buildNowPlayingRows({ paused = false, loop = 'off', canPrevious = false
   };
   return [
     new ActionRowBuilder().addComponents(
-      button('prev', { emoji: '⏮', label: 'Prev', off: !canPrevious }),
-      button('pause', { emoji: paused ? '▶️' : '⏸️', label: paused ? 'Resume' : 'Pause', style: paused ? ButtonStyle.Success : ButtonStyle.Primary }),
-      button('skip', { emoji: '⏭', label: 'Skip' }),
-      button('stop', { emoji: '⏹️', label: 'Stop', style: ButtonStyle.Danger }),
+      button('prev', { emoji: '⏮', off: !canPrevious }),
+      button('pause', { emoji: paused ? '▶️' : '⏸️', style: paused ? ButtonStyle.Success : ButtonStyle.Primary }),
+      button('skip', { emoji: '⏭' }),
+      button('stop', { emoji: '⏹️', style: ButtonStyle.Danger }),
       button('loop', { emoji: loop === 'track' ? '🔂' : '🔁', label: `Loop: ${loop}`, style: loop === 'off' ? ButtonStyle.Secondary : ButtonStyle.Success }),
     ),
     new ActionRowBuilder().addComponents(
@@ -82,6 +82,7 @@ function buildNowPlayingRows({ paused = false, loop = 'off', canPrevious = false
       button('queue', { emoji: '📜', label: 'Queue' }),
       button('favorite', { emoji: '❤️', label: 'Favorite' }),
       button('lyrics', { emoji: '🎤', label: 'Lyrics' }),
+      button('skipnext', { emoji: '⏩', label: 'Skip next', off: !hasNext }),
     ),
   ];
 }
@@ -89,7 +90,7 @@ function buildNowPlayingRows({ paused = false, loop = 'off', canPrevious = false
 function buildNowPlayingCard(snapshot, { withControls = true, disabled = false } = {}) {
   return {
     embed: buildNowPlayingEmbed(snapshot),
-    rows: withControls ? buildNowPlayingRows({ paused: snapshot.paused, loop: snapshot.loop, canPrevious: snapshot.canPrevious, disabled }) : [],
+    rows: withControls ? buildNowPlayingRows({ paused: snapshot.paused, loop: snapshot.loop, canPrevious: snapshot.canPrevious, hasNext: Boolean(snapshot.next), disabled }) : [],
   };
 }
 

@@ -144,3 +144,25 @@ test('np router: commands channel restriction applies to the buttons', async () 
   assert.equal(queue.player.state.status, 'playing');
   settings = { djRole: null, textChannel: null };
 });
+
+test('np router: "Skip next" removes only the Up next track, refreshes the card, and needs DJ rights when restricted', async () => {
+  queue = makeQueue();
+  queue.remove = (position) => { queue.calls.push(`remove:${position}`); return queue.tracks.length ? { title: 'Next Song' } : null; };
+  let c = click('np:skipnext');
+  await handleNowPlayingButton(c.interaction);
+  assert.deepEqual(queue.calls, ['remove:1']);
+  assert.match(text(c.replies[0]), /Removed \*\*Next Song\*\*/);
+  assert.equal(queue.refreshed, 1);
+
+  queue.tracks = [];
+  c = click('np:skipnext');
+  await handleNowPlayingButton(c.interaction);
+  assert.match(text(c.replies[0]), /Nothing is queued/);
+
+  settings = { djRole: 'dj', textChannel: null };
+  queue.tracks = [{}];
+  c = click('np:skipnext', { userId: 'random' });
+  await handleNowPlayingButton(c.interaction);
+  assert.match(text(c.replies[0]), /DJ role|Manage Server/);
+  settings = { djRole: null, textChannel: null };
+});

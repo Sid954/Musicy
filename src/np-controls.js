@@ -8,7 +8,7 @@ const { canUse } = require('./music/permissions');
 const { showQueue } = require('./music/queue-view');
 
 // Buttons whose slash-command equivalent is DJ-restricted use the same permission names.
-const NP_PERMISSION = { prev: 'previous', shuffle: 'shuffle', voldown: 'volume', volup: 'volume', stop: 'stop' };
+const NP_PERMISSION = { prev: 'previous', shuffle: 'shuffle', skipnext: 'remove', voldown: 'volume', volup: 'volume', stop: 'stop' };
 
 // opts.action overrides the customId (used by the request-channel player); opts.skipChannelCheck lets it work outside the commands channel.
 async function handleNowPlayingButton(i, opts = {}) {
@@ -72,6 +72,12 @@ async function handleNowPlayingButton(i, opts = {}) {
     }
     q.skip();
     await say(result.required ? `Skip vote passed (${result.votes}/${result.required}).` : 'Skipped the current track.');
+    return;
+  }
+  if (action === 'skipnext') {
+    const removed = q.remove(1); // the "Up next" track; whatever follows moves up
+    if (removed) await q.refreshAnnouncement();
+    await say(removed ? `Removed **${removed.title}** from the queue.` : 'Nothing is queued after this track.');
     return;
   }
   if (action === 'prev') {

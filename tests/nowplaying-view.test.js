@@ -43,7 +43,7 @@ test('card states: playing, paused, live and autoplay change header and colour',
   assert.equal(cardState({ track }), 'playing');
   assert.equal(header({}).author.name, '▶ Now playing');
   assert.equal(header({ paused: true }).author.name, '⏸ Paused');
-  assert.equal(header({ paused: true }).color, 0xfee75c);
+  assert.equal(header({ paused: true }).color, 0xf5a524);
   const live = buildNowPlayingEmbed({ track: { ...track, duration: 0, isLive: true } }).toJSON();
   assert.equal(live.author.name, '🔴 Live');
   assert.match(live.description, /🔴 \*\*LIVE\*\*/);
@@ -96,7 +96,7 @@ test('card respects Discord limits for huge titles and fields', () => {
 test('controls: <=3 rows of <=5 buttons, correct ids, state-dependent look', () => {
   const rows = buildNowPlayingRows({ paused: false, loop: 'off', canPrevious: true });
   assert.ok(rows.length <= 3 && rows.every((r) => r.toJSON().components.length <= 5));
-  assert.deepEqual(comps(rows).map((b) => b.custom_id), ['np:prev', 'np:pause', 'np:skip', 'np:stop', 'np:loop', 'np:shuffle', 'np:queue', 'np:favorite', 'np:lyrics']);
+  assert.deepEqual(comps(rows).map((b) => b.custom_id), ['np:prev', 'np:pause', 'np:skip', 'np:stop', 'np:loop', 'np:shuffle', 'np:queue', 'np:favorite', 'np:lyrics', 'np:skipnext']);
   const [prev, pause, , stop, loop] = comps(rows);
   assert.equal(prev.disabled, false);
   assert.equal(pause.emoji.name, '⏸️');
@@ -118,4 +118,14 @@ test('buildNowPlayingCard can omit controls and the finished embed is compact', 
   const done = buildFinishedEmbed(track).toJSON();
   assert.match(done.description, /Finished: \*\*Sami Yusuf - Make Me Strong\*\*/);
   assert.equal(done.thumbnail, undefined);
+});
+
+test('transport buttons are icon-only and "Skip next" is enabled only when something is queued', () => {
+  const rowsFor = (hasNext) => buildNowPlayingRows({ hasNext, canPrevious: true }).flatMap((r) => r.toJSON().components);
+  const by = (list, id) => list.find((b) => b.custom_id === id);
+  const buttons = rowsFor(true);
+  for (const id of ['np:prev', 'np:pause', 'np:skip', 'np:stop']) assert.equal(by(buttons, id).label, undefined, id);
+  assert.equal(by(buttons, 'np:skipnext').label, 'Skip next');
+  assert.equal(by(buttons, 'np:skipnext').disabled, false);
+  assert.equal(by(rowsFor(false), 'np:skipnext').disabled, true);
 });
