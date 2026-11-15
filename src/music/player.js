@@ -455,9 +455,8 @@ class GuildQueue {
       const label = (name) => name.charAt(0).toUpperCase() + name.slice(1);
       badges.push(`🎚 ${names.slice(0, 3).map(label).join(', ')}${names.length > 3 ? ` +${names.length - 3}` : ''}`);
     }
-    // Leveling is on by default, so only mention it when it differs from that.
-    if (!this.autoNormalize) badges.push('📏 Leveling off');
-    else if (this.normalizeLevel !== DEFAULT_LOUDNESS_LEVEL) badges.push(`📏 ${this.normalizeLevel} loudness`);
+    // Leveling being off is a plain setting (/normalize), not worth a badge; only mention a non-default level.
+    if (this.autoNormalize && this.normalizeLevel !== DEFAULT_LOUDNESS_LEVEL) badges.push(`📏 ${this.normalizeLevel} loudness`);
     if (this.autoplay) badges.push('📻 Autoplay');
     const sleep = describeSleep({ sleepAt: this.sleepAt, afterTrack: this.sleepAfterTrack });
     if (sleep) badges.push(sleep);

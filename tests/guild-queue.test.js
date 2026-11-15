@@ -216,7 +216,7 @@ test('leveling: on by default at the soft level, hidden from the card unless it 
   assert.ok(q.getBadges().includes('📏 loud loudness'));
   q.autoNormalize = false;
   assert.deepEqual(q.rebuildFilters(), []);
-  assert.ok(q.getBadges().includes('📏 Leveling off'));
+  assert.ok(!q.getBadges().some((badge) => /Leveling|loudness/.test(badge)), 'no badge when leveling is off');
   q.destroy();
 });
 
