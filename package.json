@@ -29,7 +29,7 @@
     "deploy": "node src/deploy-commands.js",
     "update-ytdlp": "node scripts/update-ytdlp.js",
     "check": "node scripts/check.js",
-    "test": "node --test tests/",
+    "test": "node scripts/test.js",
     "selftest": "node scripts/selftest.js"
   },
   "engines": {
