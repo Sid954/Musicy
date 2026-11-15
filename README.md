@@ -64,6 +64,24 @@ Up next
 
 All commands: [`docs/COMMANDS.md`](docs/COMMANDS.md).
 
+### Spotify links
+
+Paste a Spotify **track, album or playlist** link into `/play` (or right-click → *Play this*) and Musicy plays it.
+
+- **How it works:** like most music bots, Musicy never gets audio from Spotify (that is not possible). It reads the
+  song names and lengths from the link, then finds and plays the same song on YouTube. Musicy reads Spotify's public
+  embed page, so you need **no Spotify account and no API keys**.
+- **Right song, not a remix:** each song is looked up as `Artist - Title`. If the YouTube result's length is far off
+  from Spotify's length (live cut, 10-hour loop), the next results are compared and the closest length wins. In a
+  test on a real album and a playlist of lesser-known songs, every match was within a few seconds.
+- **Fast start:** the first song starts right away; the others are matched just before they play.
+- **Limits:** up to **100 songs** per playlist or album (what the public page lists). Private playlists, artist pages,
+  podcasts and Spotify-made personalised mixes are not supported, and the bot says so.
+- **Why not the official API?** Since Spotify's 2026 developer rules, apps can no longer read other people's public
+  playlists with simple keys, so the keyless embed page is the only option that works for every user. Bots that use
+  the official API (for example Lavalink with LavaSrc) need you to register your own Spotify app.
+- Your saved playlists and queue keep Spotify songs as plain `Artist - Title` text, so they restore without Spotify.
+
 ## Quick start
 
 You need **Node.js 18 or newer** (22 recommended) and a Discord account.
