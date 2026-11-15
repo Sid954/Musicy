@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const voice = require('@discordjs/voice');
 const discord = require('discord.js');
 const embeds = require('../embeds');
@@ -23,6 +23,8 @@ function getYtdlpVersion() {
 module.exports = {
   data: new SlashCommandBuilder().setName('stats').setDescription('Show bot runtime and memory stats'),
   async execute(i) {
+    // Reading helper processes can take longer than Discord's 3 s reply window on a busy host: acknowledge first.
+    await i.deferReply({ flags: MessageFlags.Ephemeral });
     const memory = process.memoryUsage();
     // yt-dlp / ffmpeg count toward the host's RAM limit but are invisible to process.memoryUsage().
     let helpersLine = 'unavailable on this system';
@@ -42,6 +44,6 @@ module.exports = {
       discordVersion: discord.version,
       voiceVersion: voice.version || require(require('node:path').join(require('node:path').dirname(require.resolve('@discordjs/voice')), '..', 'package.json')).version,
     });
-    await i.reply({ embeds: [embeds.info(description)], ephemeral: true });
+    await i.editReply({ embeds: [embeds.info(description)] });
   },
 };
