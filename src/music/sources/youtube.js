@@ -7,6 +7,7 @@ const path = require('path');
 const ffmpegPath = require('ffmpeg-static');
 const { dest: bundledYtdlp } = require('../../../scripts/update-ytdlp');
 const { createResolveCache } = require('../resolve-cache');
+const { trackThumbnail } = require('../thumbnail');
 const { track: trackProcess } = require('../../process-registry');
 const { buildFadeFilters } = require('../effects');
 const { wireStreamProcesses } = require('./stream-process');
@@ -103,7 +104,7 @@ function toTrack(j) {
     url: j.webpage_url || j.url || `https://www.youtube.com/watch?v=${j.id}`,
     duration: j.duration || 0,
     isLive: Boolean(j.is_live),
-    thumbnail: j.thumbnail || (j.thumbnails && j.thumbnails.length ? j.thumbnails[j.thumbnails.length - 1].url : null),
+    thumbnail: j.thumbnail || (j.thumbnails && j.thumbnails.length ? j.thumbnails[j.thumbnails.length - 1].url : null) || trackThumbnail({ url: j.webpage_url || j.url || (j.id ? `https://www.youtube.com/watch?v=${j.id}` : '') }),
     author: j.uploader || j.channel || '',
     ...(j.playlist_title || j.playlist ? { playlistTitle: String(j.playlist_title || j.playlist).slice(0, 100) } : {}),
   };

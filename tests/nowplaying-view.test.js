@@ -96,7 +96,7 @@ test('card respects Discord limits for huge titles and fields', () => {
 test('controls: <=3 rows of <=5 buttons, correct ids, state-dependent look', () => {
   const rows = buildNowPlayingRows({ paused: false, loop: 'off', canPrevious: true });
   assert.ok(rows.length <= 3 && rows.every((r) => r.toJSON().components.length <= 5));
-  assert.deepEqual(comps(rows).map((b) => b.custom_id), ['np:prev', 'np:pause', 'np:skip', 'np:stop', 'np:loop', 'np:shuffle', 'np:queue', 'np:favorite', 'np:lyrics', 'np:voldown', 'np:volup']);
+  assert.deepEqual(comps(rows).map((b) => b.custom_id), ['np:prev', 'np:pause', 'np:skip', 'np:stop', 'np:loop', 'np:shuffle', 'np:queue', 'np:favorite', 'np:lyrics']);
   const [prev, pause, , stop, loop] = comps(rows);
   assert.equal(prev.disabled, false);
   assert.equal(pause.emoji.name, '⏸️');
@@ -114,7 +114,7 @@ test('controls: <=3 rows of <=5 buttons, correct ids, state-dependent look', () 
 
 test('buildNowPlayingCard can omit controls and the finished embed is compact', () => {
   assert.deepEqual(buildNowPlayingCard({ track }, { withControls: false }).rows, []);
-  assert.equal(buildNowPlayingCard({ track }).rows.length, 3);
+  assert.equal(buildNowPlayingCard({ track }).rows.length, 2);
   const done = buildFinishedEmbed(track).toJSON();
   assert.match(done.description, /Finished: \*\*Sami Yusuf - Make Me Strong\*\*/);
   assert.equal(done.thumbnail, undefined);

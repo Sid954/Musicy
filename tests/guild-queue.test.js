@@ -105,7 +105,7 @@ test('refreshAnnouncement re-renders embed AND rows from the live queue (loop ba
   assert.match(fields['Up next'], /^Song 2 · 3:00\n1 more · 6m left/);
   assert.equal(fields.Duration, '3:00');
   assert.equal(fields.Channel, 'Band');
-  assert.equal(edit.components.length, 3);
+  assert.equal(edit.components.length, 2);
   q.destroy();
 });
 

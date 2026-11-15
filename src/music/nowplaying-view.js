@@ -4,6 +4,7 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('
 const { fmt, formatClock } = require('./format');
 const { progressBar } = require('./progress');
 const { displayTitle } = require('./title');
+const { trackThumbnail } = require('./thumbnail');
 const { clip } = require('./pager');
 const { formatTotal } = require('./collection');
 
@@ -55,7 +56,8 @@ function buildNowPlayingEmbed(snapshot) {
     .setDescription(live ? '🔴 **LIVE**' : `${progressBar(elapsed, track.duration, BAR_WIDTH)} ${formatClock(elapsed)} / ${formatClock(track.duration)}`)
     .addFields(fields);
   if (/^https?:\/\//i.test(String(track.url || ''))) embed.setURL(track.url);
-  if (track.thumbnail) embed.setThumbnail(track.thumbnail);
+  const thumbnail = trackThumbnail(track);
+  if (thumbnail) embed.setThumbnail(thumbnail);
   if (footer) embed.setFooter({ text: clip(footer, 2048) });
   return embed;
 }
@@ -80,10 +82,6 @@ function buildNowPlayingRows({ paused = false, loop = 'off', canPrevious = false
       button('queue', { emoji: '📜', label: 'Queue' }),
       button('favorite', { emoji: '❤️', label: 'Favorite' }),
       button('lyrics', { emoji: '🎤', label: 'Lyrics' }),
-    ),
-    new ActionRowBuilder().addComponents(
-      button('voldown', { emoji: '🔉', label: '-10%' }),
-      button('volup', { emoji: '🔊', label: '+10%' }),
     ),
   ];
 }
