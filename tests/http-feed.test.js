@@ -39,7 +39,7 @@ test('fetches a file in ranged chunks and reassembles it exactly', async () => {
   assert.deepEqual(requests, ['bytes=0-299999', 'bytes=300000-599999', 'bytes=600000-899999', 'bytes=900000-1199999']);
 });
 
-test('resumes from the byte it reached when a connection drops in the middle of a chunk', async () => {
+test('a chunk cut off in the middle is asked for again from its start: no bytes lost or repeated', async () => {
   let dropped = false;
   const starts = [];
   const s = await serve((req, res) => {
@@ -56,7 +56,7 @@ test('resumes from the byte it reached when a connection drops in the middle of 
   const data = await readAll(createHttpFeed(s.url, { chunk: 200_000, retryDelayMs: 10 }));
   await s.close();
   assert.ok(data.equals(DATA), 'no bytes lost or repeated');
-  assert.ok(starts.includes(250_000), `asked again from where it stopped: ${starts}`);
+  assert.equal(starts.filter((n) => n === 200_000).length, 2, `the cut chunk was requested twice: ${starts}`);
 });
 
 test('a server that ignores ranges (200) is streamed whole', async () => {

@@ -4,11 +4,11 @@
 // (reproduced: even `ffmpeg -i http://example.com/` segfaults, while piped or local input works). Node's own
 // networking is fine, so ffmpeg never touches the network.
 //
-// Songs are fetched in ranged chunks (what browsers and yt-dlp do): no long-lived connection for YouTube to drop,
-// and a failed chunk is simply asked for again from the same byte. Live streams are one plain GET.
+// Songs are fetched in ranged chunks (what browsers and yt-dlp do), each one read completely before it is played:
+// no long-lived connection for YouTube to drop, and a failed chunk is simply asked for again from the same byte. Live streams are one plain GET.
 const { Readable } = require('stream');
 
-const DEFAULT_CHUNK = 4 * 1024 * 1024;
+const DEFAULT_CHUNK = 1024 * 1024; // about a minute of audio
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -78,19 +78,23 @@ function createHttpFeed(url, { live = false, chunk = DEFAULT_CHUNK, retries = 3,
         continue;
       }
       total = totalFromContentRange(response.headers.get('content-range')) ?? total;
+      // Read the WHOLE chunk right away, at full network speed, and only then hand it to the player. Holding a
+      // connection open while the player consumes it at song speed (~16 kB/s) gets it dropped by YouTube after a
+      // few minutes ("terminated"), which is what ended a long mix after about 6 minutes on the host.
+      const parts = [];
       let received = 0;
       try {
-        for await (const part of body(response)) {
-          received += part.length;
-          offset += part.length;
-          yield part;
-        }
+        for await (const part of body(response)) { parts.push(part); received += part.length; }
       } catch (error) {
-        if (controller.signal.aborted || ++failures > retries) throw error;
+        if (controller.signal.aborted) throw error;
+        failures = received > 0 ? 1 : failures + 1; // progress resets the count; only repeated dead ends give up
+        if (failures > retries) throw error;
         onRetry({ reason: error.message, offset, attempt: failures });
         await sleep(retryDelayMs);
-        continue; // ask again from the byte we reached
+        continue; // ask again from the byte we had before this chunk
       }
+      offset += received;
+      if (received > 0) yield Buffer.concat(parts, received);
       if (received === 0) {
         if (++failures > retries) throw new Error('The audio server returned no data.');
         await sleep(retryDelayMs);
