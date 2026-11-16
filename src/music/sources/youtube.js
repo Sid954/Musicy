@@ -9,6 +9,7 @@ const { dest: bundledYtdlp } = require('../../../scripts/update-ytdlp');
 const { createResolveCache } = require('../resolve-cache');
 const { createConcurrencyLimiter } = require('../rate-limit');
 const { createHttpFeed } = require('../http-feed');
+const log = require('../../log');
 const { ytdlpEnv } = require('../../ytdlp-env');
 const { trackThumbnail } = require('../thumbnail');
 const { track: trackProcess } = require('../../process-registry');
@@ -289,9 +290,11 @@ function buildFfmpegArgs({ seek = 0, filters = [], volume = 1, input = 'pipe:0',
 // (SIGSEGV) on hosts where it has to resolve a host name itself.
 function spawnStream(track, opts, directUrl) {
   const ff = trackProcess(spawn(ffmpegPath, buildFfmpegArgs({ ...opts, input: 'pipe:0' }), {
-    stdio: ['pipe', 'pipe', 'ignore'],
+    stdio: ['pipe', 'pipe', 'pipe'],
   }), { label: 'ffmpeg' });
-  const feed = directUrl ? createHttpFeed(directUrl, { signal: opts.signal }) : null;
+  ff.stderr.on('data', (chunk) => { ff.stderrText = `${ff.stderrText || ''}${chunk}`.slice(-1000); });
+  // Never log the URL itself: it carries access tokens.
+  const feed = directUrl ? createHttpFeed(directUrl, { signal: opts.signal, onRetry: (info) => log.warn('audio download retry', JSON.stringify({ title: track.title, ...info })) }) : null;
   const dl = directUrl ? null : trackProcess(spawn(ytdlp(), [...baseArgs(), '--no-playlist', '-f', opts.format || 'bestaudio/best', '-o', '-', track.url], {
     stdio: ['ignore', 'pipe', 'pipe'], env: ytdlpEnv(),
   }), { label: 'yt-dlp' });
@@ -305,7 +308,7 @@ function spawnStream(track, opts, directUrl) {
   const killBoth = wireStreamProcesses({ ff, dl, output, makeError: ytdlpError, killChild });
   if (feed) {
     ff.stdin.on('error', () => {});
-    feed.on('error', (error) => { killChild(ff); if (!output.destroyed && !output.readableEnded) output.destroy(error); });
+    feed.on('error', (error) => { log.warn('audio download failed', JSON.stringify({ title: track.title, message: error.message })); killChild(ff); if (!output.destroyed && !output.readableEnded) output.destroy(error); });
     feed.pipe(ff.stdin);
   }
   const kill = () => { feed?.destroy(); killBoth(); };

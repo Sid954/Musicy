@@ -19,7 +19,7 @@ function totalFromContentRange(value) {
 }
 
 // Returns a Readable of the audio bytes. `live: true` = endless stream (single request, no ranges).
-function createHttpFeed(url, { live = false, chunk = DEFAULT_CHUNK, retries = 3, retryDelayMs = 500, signal, fetchImpl = globalThis.fetch, headers = {}, timeoutMs = 20_000 } = {}) {
+function createHttpFeed(url, { live = false, chunk = DEFAULT_CHUNK, retries = 3, retryDelayMs = 500, signal, fetchImpl = globalThis.fetch, headers = {}, timeoutMs = 20_000, onRetry = () => {} } = {}) {
   const controller = new AbortController();
   const onAbort = () => controller.abort();
   signal?.addEventListener('abort', onAbort, { once: true });
@@ -59,6 +59,7 @@ function createHttpFeed(url, { live = false, chunk = DEFAULT_CHUNK, retries = 3,
         response = await fetchImpl(url, { headers: { ...baseHeaders, range: `bytes=${offset}-${end}` }, signal: controller.signal, redirect: 'follow' });
       } catch (error) {
         if (controller.signal.aborted || ++failures > retries) throw error;
+        onRetry({ reason: `request failed: ${error.cause?.code || error.message}`, offset, attempt: failures });
         await sleep(retryDelayMs);
         continue;
       }
@@ -72,6 +73,7 @@ function createHttpFeed(url, { live = false, chunk = DEFAULT_CHUNK, retries = 3,
         try { await response.body?.cancel(); } catch { /* ignore */ }
         if (response.status === 416 && total !== null) return; // asked past the end
         if (controller.signal.aborted || ++failures > retries || response.status < 500) throw new Error(`The audio server answered HTTP ${response.status}.`);
+        onRetry({ reason: `HTTP ${response.status}`, offset, attempt: failures });
         await sleep(retryDelayMs);
         continue;
       }
@@ -85,6 +87,7 @@ function createHttpFeed(url, { live = false, chunk = DEFAULT_CHUNK, retries = 3,
         }
       } catch (error) {
         if (controller.signal.aborted || ++failures > retries) throw error;
+        onRetry({ reason: error.message, offset, attempt: failures });
         await sleep(retryDelayMs);
         continue; // ask again from the byte we reached
       }

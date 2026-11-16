@@ -18,7 +18,8 @@ function wireFfmpegOutput({ ff, output, killChild }) {
       if (!output.destroyed && !output.writableEnded) output.end();
     } else {
       killChild?.(ff);
-      destroyOutput(output, new Error(`ffmpeg exited with code ${code}${signal ? ` (${signal})` : ''}`));
+      const why = String(ff.stderrText || '').trim().split('\n').filter(Boolean).pop();
+      destroyOutput(output, new Error(`ffmpeg exited with code ${code}${signal ? ` (${signal})` : ''}${why ? `: ${why.slice(0, 200)}` : ''}`));
     }
   });
   output.on('error', () => {});
