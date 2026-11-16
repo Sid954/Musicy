@@ -30,6 +30,7 @@ After the bot is online the same check is available in Discord as `/admin selfte
 |---|---|---|
 | `YouTube lookup: … sign in (bot check)` | YouTube blocks datacenter IPs | Export cookies from a throwaway YouTube account as `cookies.txt`, upload it, set `YTDLP_COOKIES=cookies.txt`, restart. `/admin cookies` shows whether it worked. |
 | `ffmpeg: The bundled ffmpeg binary is missing` | newer npm (11+/12) blocks install scripts ("allowScripts"), so `ffmpeg-static` has no binary | Musicy now downloads it by itself on start (needs internet). If that still fails, run `node node_modules/ffmpeg-static/install.js` in the host console. |
+| `Playback error: ffmpeg exited with code null (SIGSEGV)` | the bundled ffmpeg crashes when it resolves host names itself on some Linux hosts | Fixed since the Node-side download (`src/music/http-feed.js`): update the bot. |
 | Bot plays but nobody hears it | server-muted, deafened listener, missing Speak permission | The bot posts a warning for mute / missing permissions. Check Discord's per-user volume for the bot (right-click it). |
 | Commands missing in Discord | commands not registered | `npm run deploy` (set `GUILD_ID` for instant registration in one server). |
 

@@ -1,3 +1,4 @@
+const { createHttpFeed } = require('../http-feed');
 const youtube = require('./youtube');
 const { spawn } = require('node:child_process');
 const { validateHttpUrl, validatePublicHttpUrl } = require('./url-safety');
@@ -44,14 +45,14 @@ async function stream(track, options) {
 
 // Live streams get the same loudness leveling / EQ / volume as songs (tempo filters are dropped) and reconnect
 // on network drops. Without -reconnect a dropped connection ends the stream.
-function buildRadioArgs(url, { filters = [], volume = 1 } = {}) {
+function buildRadioArgs(url, { filters = [], volume = 1, pipeInput = false } = {}) {
   const audioFilters = liveSafeFilters(filters);
   if (Number.isFinite(volume) && volume !== 1) audioFilters.push(`volume=${volume}`);
   if (Number.isFinite(volume) && volume > 1) audioFilters.push('alimiter=limit=0.95');
   return [
-    '-loglevel', 'error', '-protocol_whitelist', 'http,https,tcp,tls,crypto',
-    '-reconnect', '1', '-reconnect_streamed', '1', '-reconnect_delay_max', '5',
-    '-i', url, '-vn',
+    '-loglevel', 'error',
+    ...(pipeInput ? [] : ['-protocol_whitelist', 'http,https,tcp,tls,crypto', '-reconnect', '1', '-reconnect_streamed', '1', '-reconnect_delay_max', '5']),
+    '-i', pipeInput ? 'pipe:0' : url, '-vn',
     ...(audioFilters.length ? ['-af', audioFilters.join(',')] : []),
     '-c:a', 'libopus', '-b:a', '96k', '-ar', '48000', '-ac', '2', '-f', 'ogg', 'pipe:1',
   ];
@@ -59,16 +60,23 @@ function buildRadioArgs(url, { filters = [], volume = 1 } = {}) {
 
 function spawnRadio(track, options = {}) {
   // Live streams run until stopped, so they are never swept by age (only killed on exit / when stopped).
-  const ff = trackProcess(spawn(require('ffmpeg-static'), buildRadioArgs(track.url, options), {
-    stdio: ['ignore', 'pipe', 'ignore'],
+  // Node downloads the stream and pipes it in: the static ffmpeg build crashes (SIGSEGV) when it resolves host names itself.
+  const ff = trackProcess(spawn(require('ffmpeg-static'), buildRadioArgs(track.url, { ...options, pipeInput: true }), {
+    stdio: ['pipe', 'pipe', 'ignore'],
   }), { label: 'ffmpeg (radio)', maxAgeMs: Infinity });
+  const feed = createHttpFeed(track.url, { live: true, signal: options.signal });
   const output = new Transform({ transform(chunk, _encoding, callback) { callback(null, chunk); } });
   const killChild = (child) => { if (child && child.exitCode === null) { try { child.kill('SIGKILL'); } catch {} } };
   wireFfmpegOutput({ ff, output, killChild });
+  ff.stdin.on('error', () => {});
+  feed.on('error', (error) => { killChild(ff); if (!output.destroyed && !output.readableEnded) output.destroy(error); });
+  feed.on('end', () => { try { ff.stdin.end(); } catch { /* closed */ } });
+  feed.pipe(ff.stdin, { end: false });
   let killed = false;
   const kill = () => {
     if (killed) return;
     killed = true;
+    feed.destroy();
     killChild(ff);
     if (!output.destroyed && !output.readableEnded) output.destroy();
   };
