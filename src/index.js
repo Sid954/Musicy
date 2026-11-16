@@ -126,7 +126,9 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 // Windows does not stop child processes when the parent dies: never leave yt-dlp / ffmpeg running behind us.
 process.on('exit', () => { processRegistry.killAll(); });
 // A helper whose owner lost track of it (a bug, a hung download) is killed once it outlives its maximum age.
+require('./ytdlp-env').sweepTmp(); // leftovers of yt-dlp runs that were killed mid-unpack
 setInterval(() => {
+  require('./ytdlp-env').sweepTmp();
   for (const stuck of processRegistry.sweep()) log.warn('Killed a stuck helper process', JSON.stringify(stuck));
 }, 60_000).unref();
 

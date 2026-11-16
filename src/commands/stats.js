@@ -12,7 +12,7 @@ let ytdlpVersion = 'not checked';
 let versionPromise = null;
 function getYtdlpVersion() {
   if (!versionPromise) versionPromise = new Promise((resolve) => {
-    execFile(dest, ['--version'], { timeout: 3000, windowsHide: true }, (error, stdout) => {
+    execFile(dest, ['--version'], { timeout: 3000, windowsHide: true, env: require('../ytdlp-env').ytdlpEnv() }, (error, stdout) => {
       ytdlpVersion = error ? 'unavailable' : String(stdout).trim().slice(0, 40);
       resolve(ytdlpVersion);
     });

@@ -31,7 +31,7 @@ function download(u, out, redirects = 0) {
   });
 }
 
-async function validateBinary(filePath, { stat = fs.stat, runVersion = (file) => execFileAsync(file, ['--version'], { timeout: 5000, windowsHide: true }) } = {}) {
+async function validateBinary(filePath, { stat = fs.stat, runVersion = (file) => execFileAsync(file, ['--version'], { timeout: 5000, windowsHide: true, env: require('../src/ytdlp-env').ytdlpEnv() }) } = {}) {
   const info = await stat(filePath);
   if (info.size <= MIN_BYTES) throw new Error(`download is too small (${info.size} bytes)`);
   const result = await runVersion(filePath);

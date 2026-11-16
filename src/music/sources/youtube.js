@@ -7,6 +7,8 @@ const path = require('path');
 const ffmpegPath = require('ffmpeg-static');
 const { dest: bundledYtdlp } = require('../../../scripts/update-ytdlp');
 const { createResolveCache } = require('../resolve-cache');
+const { createConcurrencyLimiter } = require('../rate-limit');
+const { ytdlpEnv } = require('../../ytdlp-env');
 const { trackThumbnail } = require('../thumbnail');
 const { track: trackProcess } = require('../../process-registry');
 const { buildFadeFilters } = require('../effects');
@@ -30,7 +32,8 @@ function classifyYtdlpError(stderr) {
   const text = String(stderr || '').toLowerCase();
   let code = 'UNKNOWN';
 
-  if (/age.?restricted|confirm your age|age verification|may be inappropriate for some users/.test(text)) code = 'AGE_RESTRICTED';
+  if (/failed to extract|decompression resulted in return code|no space left on device|cannot allocate memory|_mei\d/.test(text)) code = 'HOST_RESOURCES';
+  else if (/age.?restricted|confirm your age|age verification|may be inappropriate for some users/.test(text)) code = 'AGE_RESTRICTED';
   else if (/sign in to confirm|confirm you.re not a bot|bot.?check|not a bot/.test(text)) code = 'BOT_CHECK';
   else if (/geo.?restrict|not available in (your|the) (country|region)|blocked in your country|country.?restricted|not made this video available in your country/.test(text)) code = 'GEO_BLOCKED';
   else if (/live event will begin|live stream is not currently available|live stream.*not available|premieres in/.test(text)) code = 'LIVE_UNSUPPORTED';
@@ -38,6 +41,7 @@ function classifyYtdlpError(stderr) {
   else if (/network is unreachable|unable to download|timed out|timeout|connection (?:reset|refused|aborted)|temporary failure in name resolution|name or service not known|http error 429|too many requests/.test(text)) code = 'NETWORK';
 
   const messages = {
+    HOST_RESOURCES: 'The host ran out of memory or disk space for a moment, so the lookup tool could not start. Please try again.',
     BOT_CHECK: 'YouTube is asking the bot to sign in. Configure YTDLP_COOKIES with a valid cookies.txt file and restart the bot.',
     AGE_RESTRICTED: "This video is age-restricted and can't be played by the bot.",
     UNAVAILABLE: 'This video is unavailable or private.',
@@ -65,9 +69,13 @@ function ytdlpError(stderr, exitCode) {
   return error;
 }
 
-function run(args, { signal } = {}) {
+// At most two yt-dlp lookups at once: each launch unpacks itself and uses ~90 MB, which adds up on a 512 MB host.
+const lookupLimiter = createConcurrencyLimiter(2);
+function run(args, options = {}) { return lookupLimiter(() => runNow(args, options)); }
+
+function runNow(args, { signal } = {}) {
   return new Promise((resolve, reject) => {
-    const p = trackProcess(spawn(ytdlp(), args, { stdio: ['ignore', 'pipe', 'pipe'] }), { label: 'yt-dlp', maxAgeMs: 5 * 60_000 });
+    const p = trackProcess(spawn(ytdlp(), args, { stdio: ['ignore', 'pipe', 'pipe'], env: ytdlpEnv() }), { label: 'yt-dlp', maxAgeMs: 5 * 60_000 });
     let out = '';
     let err = '';
     let settled = false;
@@ -282,7 +290,7 @@ function spawnStream(track, opts, directUrl) {
     stdio: [directUrl ? 'ignore' : 'pipe', 'pipe', 'ignore'],
   }), { label: 'ffmpeg' });
   const dl = directUrl ? null : trackProcess(spawn(ytdlp(), [...baseArgs(), '--no-playlist', '-f', opts.format || 'bestaudio/best', '-o', '-', track.url], {
-    stdio: ['ignore', 'pipe', 'pipe'],
+    stdio: ['ignore', 'pipe', 'pipe'], env: ytdlpEnv(),
   }), { label: 'yt-dlp' });
   let outputBytes = 0;
   const output = new Transform({
