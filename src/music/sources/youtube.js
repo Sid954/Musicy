@@ -56,7 +56,7 @@ function classifyYtdlpError(stderr) {
 }
 
 // Runtime health signals for /admin cookies (in memory only).
-const health = { lastBotCheckAt: 0, botCheckCount: 0, jsRuntimeRetries: 0, lastJsRetryAt: 0 };
+const health = { lastOkAt: 0, lastBotCheckAt: 0, botCheckCount: 0, jsRuntimeRetries: 0, lastJsRetryAt: 0 };
 const getHealth = () => ({ ...health });
 
 function ytdlpError(stderr, exitCode) {
@@ -101,7 +101,7 @@ function runNow(args, { signal } = {}) {
       signal?.removeEventListener('abort', cancel);
       if (settled) return;
       settled = true;
-      if (code === 0) resolve(out);
+      if (code === 0) { health.lastOkAt = Date.now(); resolve(out); }
       else if (!signal?.aborted) reject(ytdlpError(err, code));
       else reject(new Error('yt-dlp request cancelled'));
     });

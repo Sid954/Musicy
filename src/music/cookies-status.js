@@ -16,7 +16,7 @@ function parseOwnerIds(value) {
 }
 
 // state: { configured, exists, mtimeMs, lastBotCheckAt, botCheckCount }
-function describeCookies({ configured = false, exists = false, mtimeMs = 0, lastBotCheckAt = 0, botCheckCount = 0 } = {}, now = Date.now()) {
+function describeCookies({ configured = false, exists = false, mtimeMs = 0, lastBotCheckAt = 0, botCheckCount = 0, lastOkAt = 0 } = {}, now = Date.now()) {
   const lines = [];
   let hint;
   const botChecks = botCheckCount > 0;
@@ -36,7 +36,11 @@ function describeCookies({ configured = false, exists = false, mtimeMs = 0, last
     ? `**YouTube sign-in requests:** ${botCheckCount} since start · last ${ago(now - lastBotCheckAt)}`
     : '**YouTube sign-in requests:** none since the bot started ✅');
 
-  if (botChecks && !configured) {
+  if (botChecks && configured && exists && lastOkAt > lastBotCheckAt) {
+    // yt-dlp rewrites cookies.txt after every run, so the file time is not a reliable "saved" marker: trust the lookups.
+    lines.push(`**Last successful lookup:** ${ago(now - lastOkAt)}`);
+    hint = 'Cookies look **fine now**: the last lookup worked after the last sign-in request. Earlier requests were probably from before the cookies were loaded. If songs keep failing, re-export fresh cookies.';
+  } else if (botChecks && !configured) {
     hint = 'YouTube is blocking this host. Export cookies from a throwaway YouTube account (Netscape `cookies.txt`), set `YTDLP_COOKIES`, and restart.';
   } else if (botChecks && configured && exists && lastBotCheckAt > mtimeMs) {
     hint = 'YouTube still asked to sign in after the cookies were saved. Re-export fresh cookies (log in again, export, replace the file, restart).';

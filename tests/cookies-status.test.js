@@ -58,3 +58,14 @@ test('youtube health counts BOT_CHECK errors only', () => {
   assert.equal(youtube.getHealth().botCheckCount, before.botCheckCount);
   assert.equal(typeof youtube.getHealth().lastBotCheckAt, 'number');
 });
+
+test('a lookup that succeeded after the last sign-in request means the cookies work now', () => {
+  const now = 10 * 60 * 60 * 1000;
+  const base = { configured: true, exists: true, mtimeMs: now - 3_600_000, lastBotCheckAt: now - 3_000_000, botCheckCount: 4 };
+  const failing = describeCookies({ ...base, lastOkAt: 0 }, now);
+  assert.match(failing.hint, /still asked to sign in/);
+  const working = describeCookies({ ...base, lastOkAt: now - 600_000 }, now);
+  assert.match(working.hint, /look \*\*fine now\*\*/);
+  assert.ok(working.lines.some((line) => /Last successful lookup:\*\* 10 min ago/.test(line)));
+  assert.doesNotMatch(working.hint, /still asked/);
+});
